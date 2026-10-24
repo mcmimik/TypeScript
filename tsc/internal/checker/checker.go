@@ -11371,12 +11371,12 @@ func (c *Checker) checkIdentifier(node *ast.Node, checkMode CheckMode) *Type {
 	typeIsAutomatic := t == c.autoType || t == c.autoArrayType
 	isAutomaticTypeInNonNull := typeIsAutomatic && node.Parent.Kind == ast.KindNonNullExpression
 	// When the control flow originates in a function expression, arrow function, method, or accessor, and
-	// we are referencing a closed-over const variable or parameter or mutable local variable past its last
-	// assignment, we extend the origin of the control flow analysis to include the immediately enclosing
-	// control flow container.
+	// we are referencing a closed-over const variable (or an import of one) or parameter or mutable local
+	// variable past its last assignment, we extend the origin of the control flow analysis to include the
+	// immediately enclosing control flow container.
 	for flowContainer != declarationContainer &&
 		(ast.IsFunctionExpressionOrArrowFunction(flowContainer) || ast.IsObjectLiteralOrClassExpressionMethodOrAccessor(flowContainer)) &&
-		(c.isConstantVariable(localOrExportSymbol) && t != c.autoArrayType || c.isParameterOrMutableLocalVariable(localOrExportSymbol) && c.isPastLastAssignment(localOrExportSymbol, node)) {
+		(c.isConstantVariableOrAliasOfConstantVariable(localOrExportSymbol) && t != c.autoArrayType || c.isParameterOrMutableLocalVariable(localOrExportSymbol) && c.isPastLastAssignment(localOrExportSymbol, node)) {
 		flowContainer = c.getControlFlowContainer(flowContainer)
 	}
 	// We only look for uninitialized variables in strict null checking mode, and only when we can analyze

@@ -1159,6 +1159,23 @@ func isInfinityOrNaNString(name string) bool {
 	return name == "Infinity" || name == "-Infinity" || name == "NaN"
 }
 
+func (c *Checker) isConstantVariableOrAliasOfConstantVariable(symbol *ast.Symbol) bool {
+	// resolveAlias stops at a re-export merged with a type of the same name, so keep resolving
+	// until a symbol has a value meaning of its own
+	var seenSymbols collections.Set[*ast.Symbol]
+	for ast.IsNonLocalAlias(symbol, ast.SymbolFlagsValue) {
+		target := c.resolveAlias(symbol)
+		if target.Flags()&ast.SymbolFlagsAlias != 0 {
+			if target == symbol || seenSymbols.Has(target) {
+				return false
+			}
+			seenSymbols.Add(target)
+		}
+		symbol = target
+	}
+	return c.isConstantVariable(symbol)
+}
+
 func (c *Checker) isConstantVariable(symbol *ast.Symbol) bool {
 	return symbol.Flags()&ast.SymbolFlagsVariable != 0 && (c.getDeclarationNodeFlagsFromSymbol(symbol)&ast.NodeFlagsConstant) != 0
 }
